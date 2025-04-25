@@ -19,35 +19,35 @@ export function FormSummary({ data }: FormSummaryProps) {
     <div className="mb-6 p-4 bg-muted rounded-lg">
       <h3 className="font-medium mb-4">Resumo da Análise</h3>
       
-      <div className="grid gap-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Imagens:</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="flex flex-col">
+          <span className="text-sm text-muted-foreground">Imagens</span>
           <span className="font-medium">{data.images.length} imagem(ns)</span>
         </div>
         
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Modelo de Negócio:</span>
+        <div className="flex flex-col">
+          <span className="text-sm text-muted-foreground">Modelo de Negócio</span>
           <span className="font-medium">
             {getLabel(data.businessModel, BUSINESS_MODEL_OPTIONS)}
           </span>
         </div>
         
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tipo de Ação:</span>
+        <div className="flex flex-col">
+          <span className="text-sm text-muted-foreground">Tipo de Ação</span>
           <span className="font-medium">
             {getLabel(data.actionType, ACTION_TYPE_OPTIONS)}
           </span>
         </div>
         
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tipo de Fluxo:</span>
+        <div className="flex flex-col">
+          <span className="text-sm text-muted-foreground">Tipo de Fluxo</span>
           <span className="font-medium">
             {getLabel(data.flowType, FLOW_TYPE_OPTIONS)}
           </span>
         </div>
         
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Dispositivo:</span>
+        <div className="flex flex-col">
+          <span className="text-sm text-muted-foreground">Dispositivo</span>
           <span className="font-medium">
             {getLabel(data.device, DEVICE_OPTIONS)}
           </span>

@@ -23,20 +23,21 @@ import {
   FLOW_TYPE_OPTIONS,
   DEVICE_OPTIONS
 } from '@/constants/analysis-options'
-import { AnalysisFormData, ValidationErrors } from '@/types/analysis'
+import { AnalysisFormData, ValidationErrors, BusinessModel, ActionType, FlowType, DeviceType } from '@/types/analysis'
 
 export default function HeuristicsPage() {
   const { toast } = useToast()
   const [formData, setFormData] = useState<AnalysisFormData>({
     images: [],
-    businessModel: '',
-    actionType: '',
-    flowType: '',
-    device: ''
+    businessModel: 'marketplace' as BusinessModel,
+    actionType: 'signup_login' as ActionType,
+    flowType: 'main_success' as FlowType,
+    device: 'web' as DeviceType
   })
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResults, setAnalysisResults] = useState<any>(null)
+  const [currentStep, setCurrentStep] = useState(0)
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
@@ -72,6 +73,7 @@ export default function HeuristicsPage() {
         visibility: { status: 'pass', recommendation: 'Adicionar indicador de progresso durante o upload da imagem.' },
         systemMatch: { status: 'fail', recommendation: 'Revisar os termos técnicos usados nos campos de input.' }
       })
+      setCurrentStep(1)
     } catch (error) {
       toast({
         title: "Erro na análise",
@@ -88,9 +90,9 @@ export default function HeuristicsPage() {
       title: 'Informações da Interface',
       description: 'Forneça os detalhes da interface que você deseja analisar',
       content: (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label>Upload das Interfaces</Label>
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <Label className="text-lg font-medium">Upload das Interfaces</Label>
             <ImageUpload
               images={formData.images}
               onChange={(images) => {
@@ -106,116 +108,118 @@ export default function HeuristicsPage() {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Modelo de Negócio</Label>
-            <Select
-              value={formData.businessModel}
-              onValueChange={(value) => {
-                setFormData({ ...formData, businessModel: value })
-                setErrors({ ...errors, businessModel: undefined })
-              }}
-            >
-              <SelectTrigger className={errors.businessModel ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Selecione o modelo de negócio" />
-              </SelectTrigger>
-              <SelectContent>
-                {BUSINESS_MODEL_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.businessModel && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.businessModel}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-3">
+              <Label className="text-base">Modelo de Negócio</Label>
+              <Select
+                value={formData.businessModel}
+                onValueChange={(value: BusinessModel) => {
+                  setFormData({ ...formData, businessModel: value })
+                  setErrors({ ...errors, businessModel: undefined })
+                }}
+              >
+                <SelectTrigger className={errors.businessModel ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Selecione o modelo de negócio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_MODEL_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.businessModel && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errors.businessModel}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
-          <div className="space-y-2">
-            <Label>Tipo de Ação</Label>
-            <Select
-              value={formData.actionType}
-              onValueChange={(value) => {
-                setFormData({ ...formData, actionType: value })
-                setErrors({ ...errors, actionType: undefined })
-              }}
-            >
-              <SelectTrigger className={errors.actionType ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Selecione o tipo de ação" />
-              </SelectTrigger>
-              <SelectContent>
-                {ACTION_TYPE_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.actionType && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.actionType}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+            <div className="space-y-3">
+              <Label className="text-base">Tipo de Ação</Label>
+              <Select
+                value={formData.actionType}
+                onValueChange={(value: ActionType) => {
+                  setFormData({ ...formData, actionType: value })
+                  setErrors({ ...errors, actionType: undefined })
+                }}
+              >
+                <SelectTrigger className={errors.actionType ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Selecione o tipo de ação" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTION_TYPE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.actionType && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errors.actionType}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
-          <div className="space-y-2">
-            <Label>Tipo de Fluxo</Label>
-            <Select
-              value={formData.flowType}
-              onValueChange={(value) => {
-                setFormData({ ...formData, flowType: value })
-                setErrors({ ...errors, flowType: undefined })
-              }}
-            >
-              <SelectTrigger className={errors.flowType ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Selecione o tipo de fluxo" />
-              </SelectTrigger>
-              <SelectContent>
-                {FLOW_TYPE_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.flowType && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.flowType}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+            <div className="space-y-3">
+              <Label className="text-base">Tipo de Fluxo</Label>
+              <Select
+                value={formData.flowType}
+                onValueChange={(value: FlowType) => {
+                  setFormData({ ...formData, flowType: value })
+                  setErrors({ ...errors, flowType: undefined })
+                }}
+              >
+                <SelectTrigger className={errors.flowType ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Selecione o tipo de fluxo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FLOW_TYPE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.flowType && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errors.flowType}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
-          <div className="space-y-2">
-            <Label>Dispositivo</Label>
-            <Select
-              value={formData.device}
-              onValueChange={(value) => {
-                setFormData({ ...formData, device: value })
-                setErrors({ ...errors, device: undefined })
-              }}
-            >
-              <SelectTrigger className={errors.device ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Selecione o dispositivo" />
-              </SelectTrigger>
-              <SelectContent>
-                {DEVICE_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.device && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.device}</AlertDescription>
-              </Alert>
-            )}
+            <div className="space-y-3">
+              <Label className="text-base">Dispositivo</Label>
+              <Select
+                value={formData.device}
+                onValueChange={(value: DeviceType) => {
+                  setFormData({ ...formData, device: value })
+                  setErrors({ ...errors, device: undefined })
+                }}
+              >
+                <SelectTrigger className={errors.device ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Selecione o dispositivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEVICE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.device && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errors.device}</AlertDescription>
+                </Alert>
+              )}
+            </div>
           </div>
 
           <Button 
@@ -226,60 +230,65 @@ export default function HeuristicsPage() {
             {isAnalyzing ? 'Analisando...' : 'Iniciar Análise'}
           </Button>
         </div>
-      ),
+      )
     },
     {
       title: 'Resultado da Análise',
       description: 'Veja as recomendações baseadas nas heurísticas de Nielsen',
       content: (
-        <div className="space-y-6">
-          {analysisResults ? (
-            <>
-              <FormSummary data={formData} />
-              
-              <div className="p-4 bg-card rounded-lg">
-                <h3 className="font-semibold">1. Visibilidade do Status do Sistema</h3>
-                <p className="text-muted-foreground mt-2">
-                  O sistema deve manter os usuários informados sobre o que está acontecendo, através de feedback apropriado dentro de um tempo razoável.
-                </p>
-                <div className="mt-4">
-                  <div className="text-sm font-medium">
-                    Status: {analysisResults.visibility.status === 'pass' ? 'Aprovado' : 'Reprovado'}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    Recomendação: {analysisResults.visibility.recommendation}
-                  </div>
+        <div className="space-y-8">
+          <FormSummary data={formData} />
+          
+          <div className="grid grid-cols-1 gap-6">
+            <div className="p-4 bg-card rounded-lg">
+              <h3 className="font-semibold">1. Visibilidade do Status do Sistema</h3>
+              <p className="text-muted-foreground mt-2">
+                O sistema deve manter os usuários informados sobre o que está acontecendo, através de feedback apropriado dentro de um tempo razoável.
+              </p>
+              <div className="mt-4">
+                <div className="text-sm font-medium">
+                  Status: {analysisResults?.visibility.status === 'pass' ? 'Aprovado' : 'Reprovado'}
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  Recomendação: {analysisResults?.visibility.recommendation}
                 </div>
               </div>
-
-              <div className="p-4 bg-card rounded-lg">
-                <h3 className="font-semibold">2. Correspondência entre o Sistema e o Mundo Real</h3>
-                <p className="text-muted-foreground mt-2">
-                  O sistema deve falar a linguagem dos usuários, com palavras, frases e conceitos familiares ao usuário, em vez de termos orientados ao sistema.
-                </p>
-                <div className="mt-4">
-                  <div className="text-sm font-medium">
-                    Status: {analysisResults.systemMatch.status === 'pass' ? 'Aprovado' : 'Reprovado'}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">
-                    Recomendação: {analysisResults.systemMatch.recommendation}
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center text-muted-foreground">
-              Realize a análise para ver os resultados
             </div>
-          )}
+
+            <div className="p-4 bg-card rounded-lg">
+              <h3 className="font-semibold">2. Correspondência entre o Sistema e o Mundo Real</h3>
+              <p className="text-muted-foreground mt-2">
+                O sistema deve falar a linguagem dos usuários, com palavras, frases e conceitos familiares ao usuário, em vez de termos orientados ao sistema.
+              </p>
+              <div className="mt-4">
+                <div className="text-sm font-medium">
+                  Status: {analysisResults?.systemMatch.status === 'pass' ? 'Aprovado' : 'Reprovado'}
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  Recomendação: {analysisResults?.systemMatch.recommendation}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      ),
-    },
+      )
+    }
   ]
 
   return (
     <MainLayout>
-      <Wizard steps={steps} />
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">Análise Heurística</h1>
+          <p className="text-gray-600">Analise sua interface com base em princípios de usabilidade</p>
+        </div>
+
+        <Wizard
+          steps={steps}
+          currentStep={currentStep}
+          onStepChange={setCurrentStep}
+        />
+      </div>
     </MainLayout>
   )
 } 

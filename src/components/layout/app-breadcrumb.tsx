@@ -41,7 +41,7 @@ export function AppBreadcrumb() {
           const isLast = index === segments.length - 1;
           
           return (
-            <div key={path}>
+            <div key={path} className="flex items-center">
               <BreadcrumbSeparator>
                 <ChevronRight className="h-4 w-4" />
               </BreadcrumbSeparator>

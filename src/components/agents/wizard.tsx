@@ -10,10 +10,14 @@ interface WizardProps {
     description: string
     content: ReactNode
   }[]
+  currentStep?: number
+  onStepChange?: (step: number) => void
 }
 
-export function Wizard({ steps }: WizardProps) {
-  const [currentStep, setCurrentStep] = useState(0)
+export function Wizard({ steps, currentStep: externalStep, onStepChange }: WizardProps) {
+  const [internalStep, setInternalStep] = useState(0)
+  const currentStep = externalStep ?? internalStep
+  const setCurrentStep = onStepChange ?? setInternalStep
 
   const isFirstStep = currentStep === 0
   const isLastStep = currentStep === steps.length - 1
@@ -53,7 +57,7 @@ export function Wizard({ steps }: WizardProps) {
           Voltar
         </Button>
 
-        <Button onClick={nextStep}>
+        <Button onClick={nextStep} disabled={isLastStep}>
           {isLastStep ? 'Concluir' : 'Próximo'}
           {!isLastStep && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
