@@ -6,6 +6,7 @@ import { Header } from './Header'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AppBreadcrumb } from './app-breadcrumb'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -45,6 +46,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Header />
         </div>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <AppBreadcrumb />
           {children}
         </main>
       </div>
