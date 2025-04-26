@@ -51,7 +51,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-neutral-700;
   }
   body {
     @apply bg-background text-foreground;
@@ -94,7 +94,4 @@
 }
 .text-accent-foreground {
   color: hsl(var(--accent-foreground));
-}
-.border-border {
-  border-color: hsl(var(--border));
 }
