@@ -3,16 +3,18 @@
 import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { Upload, X, GripVertical } from 'lucide-react'
+import { Upload, X, GripVertical, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnalysisImage } from '@/types/analysis'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface ImageUploadProps {
   images: AnalysisImage[];
   onChange: (images: AnalysisImage[]) => void;
+  maxImages?: number;
 }
 
-export function ImageUpload({ images, onChange }: ImageUploadProps) {
+export function ImageUpload({ images, onChange, maxImages = 7 }: ImageUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newImages = acceptedFiles.map((file, index) => ({
       file,
@@ -21,14 +23,14 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
       isEnd: false
     }));
 
-    if (images.length + acceptedFiles.length > 5) {
-      alert('Máximo de 5 imagens permitido');
+    if (images.length + acceptedFiles.length > maxImages) {
+      alert(`Máximo de ${maxImages} imagens permitido`);
       return;
     }
 
     const allImages = [...images, ...newImages];
     updateImageFlags(allImages);
-  }, [images, onChange]);
+  }, [images, onChange, maxImages]);
 
   const updateImageFlags = (imgs: AnalysisImage[]) => {
     const updatedImages = imgs.map((img, index) => ({
@@ -42,7 +44,7 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {'image/*': []},
-    maxFiles: 5 - images.length,
+    maxFiles: maxImages - images.length,
     onDrop,
     noClick: images.length > 0
   });
@@ -63,18 +65,39 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Sequência de Telas</span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Faça upload de até {maxImages} imagens que representam o fluxo de interação.</p>
+                <p className="mt-1">A primeira imagem será considerada o início do fluxo e a última o fim.</p>
+                <p className="mt-1">Você pode reordenar as imagens arrastando-as.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {images.length}/{maxImages} imagens
+        </span>
+      </div>
+      
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors
           ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}
-          ${images.length >= 5 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          ${images.length >= maxImages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         onClick={(e) => {
           if (images.length > 0) {
             e.stopPropagation();
           }
         }}
       >
-        <input {...getInputProps()} disabled={images.length >= 5} />
+        <input {...getInputProps()} disabled={images.length >= maxImages} />
         
         {images.length === 0 ? (
           <>
@@ -82,11 +105,14 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
             <p className="mt-2 text-sm text-muted-foreground">
               Arraste imagens ou clique para selecionar
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Recomendado: Inclua telas de início, interações principais e fim do fluxo
+            </p>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {images.length >= 5 
-              ? 'Limite máximo de 5 imagens atingido'
+            {images.length >= maxImages 
+              ? `Limite máximo de ${maxImages} imagens atingido`
               : 'Arraste mais imagens para adicionar'}
           </p>
         )}
@@ -133,6 +159,9 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                           >
                             <GripVertical className="h-4 w-4 text-muted-foreground" />
                           </div>
+                          <div className="absolute -top-2 -left-2 flex items-center justify-center h-6 w-6 bg-background rounded-full border text-xs font-medium">
+                            {index + 1}
+                          </div>
                         </div>
                         <div className="absolute -bottom-6 left-0 right-0 flex gap-1 justify-center">
                           {image.isStart && (
@@ -143,6 +172,11 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                           {image.isEnd && (
                             <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                               Fim
+                            </span>
+                          )}
+                          {!image.isStart && !image.isEnd && (
+                            <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                              Interação
                             </span>
                           )}
                         </div>
@@ -158,4 +192,4 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
       )}
     </div>
   );
-} 
+}

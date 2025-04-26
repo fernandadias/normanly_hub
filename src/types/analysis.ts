@@ -24,4 +24,32 @@ export interface ValidationErrors {
   actionType?: string;
   flowType?: string;
   device?: string;
-} 
+}
+
+// Interfaces para resultados da análise heurística
+export interface HeuristicIssue {
+  description: string;
+  imageIndex: number;
+  coordinates: {
+    x: number;
+    y: number;
+  };
+  recommendation: string;
+}
+
+export interface HeuristicResult {
+  id: string;
+  name: string;
+  description: string;
+  score: number;
+  issues: HeuristicIssue[];
+}
+
+export interface AnalysisResult {
+  preview: boolean;
+  overallScore?: number;
+  heuristics?: HeuristicResult[];
+  analysis?: string;
+  estimatedQuality?: string;
+  fullAnalysisCost?: number;
+}

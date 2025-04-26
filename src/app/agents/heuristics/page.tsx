@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Wizard } from '@/components/agents/wizard'
 import { Label } from '@/components/ui/label'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { ImageUpload } from '@/components/analysis/image-upload'
 import { FormSummary } from '@/components/analysis/form-summary'
+import { AnalysisPreview } from '@/components/analysis/analysis-preview'
+import { AnalysisResults } from '@/components/analysis/analysis-results'
 import {
   Select,
   SelectContent,
@@ -23,7 +25,7 @@ import {
   FLOW_TYPE_OPTIONS,
   DEVICE_OPTIONS
 } from '@/constants/analysis-options'
-import { AnalysisFormData, ValidationErrors, BusinessModel, ActionType, FlowType, DeviceType } from '@/types/analysis'
+import { AnalysisFormData, ValidationErrors, BusinessModel, ActionType, FlowType, DeviceType, AnalysisResult } from '@/types/analysis'
 
 export default function HeuristicsPage() {
   const { toast } = useToast()
@@ -36,7 +38,8 @@ export default function HeuristicsPage() {
   })
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResults, setAnalysisResults] = useState<any>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
 
   const validateForm = (): boolean => {
@@ -62,27 +65,75 @@ export default function HeuristicsPage() {
     return Object.keys(newErrors).length === 0
   }
 
+  const handlePreview = () => {
+    if (!validateForm()) return
+    setShowPreview(true)
+  }
+
   const handleAnalysis = async () => {
     if (!validateForm()) return
 
     setIsAnalyzing(true)
     try {
-      // TODO: Implementar integração com backend
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      setAnalysisResults({
-        visibility: { status: 'pass', recommendation: 'Adicionar indicador de progresso durante o upload da imagem.' },
-        systemMatch: { status: 'fail', recommendation: 'Revisar os termos técnicos usados nos campos de input.' }
+      // Converter imagens para base64
+      const imageBase64Promises = formData.images.map(img => 
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(img.file)
+        })
+      )
+      
+      const imageBase64Array = await Promise.all(imageBase64Promises)
+      
+      // Enviar para a API
+      const response = await fetch('/api/heuristics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          images: imageBase64Array,
+          businessModel: formData.businessModel,
+          actionType: formData.actionType,
+          flowType: formData.flowType,
+          device: formData.device,
+          preview: false
+        }),
       })
+
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.status}`)
+      }
+
+      const result = await response.json()
+      setAnalysisResults(result)
       setCurrentStep(1)
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro na análise",
-        description: "Ocorreu um erro ao processar a análise. Tente novamente.",
+        description: error.message || "Ocorreu um erro ao processar a análise. Tente novamente.",
         variant: "destructive"
       })
     } finally {
       setIsAnalyzing(false)
+      setShowPreview(false)
     }
+  }
+
+  const resetAnalysis = () => {
+    setFormData({
+      images: [],
+      businessModel: 'marketplace',
+      actionType: 'signup_login',
+      flowType: 'main_success',
+      device: 'web'
+    })
+    setErrors({})
+    setAnalysisResults(null)
+    setCurrentStep(0)
+    setShowPreview(false)
   }
 
   const steps = [
@@ -91,144 +142,170 @@ export default function HeuristicsPage() {
       description: 'Forneça os detalhes da interface que você deseja analisar',
       content: (
         <div className="space-y-8">
-          <div className="space-y-4">
-            <Label className="text-lg font-medium">Upload das Interfaces</Label>
-            <ImageUpload
-              images={formData.images}
-              onChange={(images) => {
-                setFormData({ ...formData, images })
-                setErrors({ ...errors, images: undefined })
-              }}
+          {showPreview ? (
+            <AnalysisPreview 
+              formData={formData}
+              onProceed={handleAnalysis}
+              onCancel={() => setShowPreview(false)}
             />
-            {errors.images && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.images}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                <Label className="text-lg font-medium">Upload das Interfaces</Label>
+                <ImageUpload
+                  images={formData.images}
+                  onChange={(images) => {
+                    setFormData({ ...formData, images })
+                    setErrors({ ...errors, images: undefined })
+                  }}
+                  maxImages={7}
+                />
+                {errors.images && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errors.images}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="space-y-3">
-              <Label className="text-base">Modelo de Negócio</Label>
-              <Select
-                value={formData.businessModel}
-                onValueChange={(value: BusinessModel) => {
-                  setFormData({ ...formData, businessModel: value })
-                  setErrors({ ...errors, businessModel: undefined })
-                }}
-              >
-                <SelectTrigger className={errors.businessModel ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Selecione o modelo de negócio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUSINESS_MODEL_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.businessModel && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{errors.businessModel}</AlertDescription>
-                </Alert>
-              )}
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-base">Modelo de Negócio</Label>
+                  <Select
+                    value={formData.businessModel}
+                    onValueChange={(value: BusinessModel) => {
+                      setFormData({ ...formData, businessModel: value })
+                      setErrors({ ...errors, businessModel: undefined })
+                    }}
+                  >
+                    <SelectTrigger className={errors.businessModel ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Selecione o modelo de negócio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_MODEL_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.businessModel && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{errors.businessModel}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
 
-            <div className="space-y-3">
-              <Label className="text-base">Tipo de Ação</Label>
-              <Select
-                value={formData.actionType}
-                onValueChange={(value: ActionType) => {
-                  setFormData({ ...formData, actionType: value })
-                  setErrors({ ...errors, actionType: undefined })
-                }}
-              >
-                <SelectTrigger className={errors.actionType ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Selecione o tipo de ação" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTION_TYPE_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.actionType && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{errors.actionType}</AlertDescription>
-                </Alert>
-              )}
-            </div>
+                <div className="space-y-3">
+                  <Label className="text-base">Tipo de Ação</Label>
+                  <Select
+                    value={formData.actionType}
+                    onValueChange={(value: ActionType) => {
+                      setFormData({ ...formData, actionType: value })
+                      setErrors({ ...errors, actionType: undefined })
+                    }}
+                  >
+                    <SelectTrigger className={errors.actionType ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Selecione o tipo de ação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTION_TYPE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.actionType && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{errors.actionType}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
 
-            <div className="space-y-3">
-              <Label className="text-base">Tipo de Fluxo</Label>
-              <Select
-                value={formData.flowType}
-                onValueChange={(value: FlowType) => {
-                  setFormData({ ...formData, flowType: value })
-                  setErrors({ ...errors, flowType: undefined })
-                }}
-              >
-                <SelectTrigger className={errors.flowType ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Selecione o tipo de fluxo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FLOW_TYPE_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.flowType && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{errors.flowType}</AlertDescription>
-                </Alert>
-              )}
-            </div>
+                <div className="space-y-3">
+                  <Label className="text-base">Tipo de Fluxo</Label>
+                  <Select
+                    value={formData.flowType}
+                    onValueChange={(value: FlowType) => {
+                      setFormData({ ...formData, flowType: value })
+                      setErrors({ ...errors, flowType: undefined })
+                    }}
+                  >
+                    <SelectTrigger className={errors.flowType ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Selecione o tipo de fluxo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FLOW_TYPE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.flowType && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{errors.flowType}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
 
-            <div className="space-y-3">
-              <Label className="text-base">Dispositivo</Label>
-              <Select
-                value={formData.device}
-                onValueChange={(value: DeviceType) => {
-                  setFormData({ ...formData, device: value })
-                  setErrors({ ...errors, device: undefined })
-                }}
-              >
-                <SelectTrigger className={errors.device ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Selecione o dispositivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEVICE_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.device && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{errors.device}</AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </div>
+                <div className="space-y-3">
+                  <Label className="text-base">Dispositivo</Label>
+                  <Select
+                    value={formData.device}
+                    onValueChange={(value: DeviceType) => {
+                      setFormData({ ...formData, device: value })
+                      setErrors({ ...errors, device: undefined })
+                    }}
+                  >
+                    <SelectTrigger className={errors.device ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Selecione o dispositivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEVICE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.device && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{errors.device}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </div>
 
-          <Button 
-            onClick={handleAnalysis}
-            disabled={isAnalyzing}
-            className="w-full"
-          >
-            {isAnalyzing ? 'Analisando...' : 'Iniciar Análise'}
-          </Button>
+              <div className="flex gap-4">
+                <Button 
+                  onClick={handlePreview}
+                  disabled={isAnalyzing || formData.images.length === 0}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Preview Gratuito
+                </Button>
+                <Button 
+                  onClick={handleAnalysis}
+                  disabled={isAnalyzing || formData.images.length === 0}
+                  className="w-full"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analisando...
+                    </>
+                  ) : 'Iniciar Análise Completa'}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )
     },
@@ -236,41 +313,18 @@ export default function HeuristicsPage() {
       title: 'Resultado da Análise',
       description: 'Veja as recomendações baseadas nas heurísticas de Nielsen',
       content: (
-        <div className="space-y-8">
-          <FormSummary data={formData} />
-          
-          <div className="grid grid-cols-1 gap-6">
-            <div className="p-4 bg-card rounded-lg">
-              <h3 className="font-semibold">1. Visibilidade do Status do Sistema</h3>
-              <p className="text-muted-foreground mt-2">
-                O sistema deve manter os usuários informados sobre o que está acontecendo, através de feedback apropriado dentro de um tempo razoável.
-              </p>
-              <div className="mt-4">
-                <div className="text-sm font-medium">
-                  Status: {analysisResults?.visibility.status === 'pass' ? 'Aprovado' : 'Reprovado'}
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">
-                  Recomendação: {analysisResults?.visibility.recommendation}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-card rounded-lg">
-              <h3 className="font-semibold">2. Correspondência entre o Sistema e o Mundo Real</h3>
-              <p className="text-muted-foreground mt-2">
-                O sistema deve falar a linguagem dos usuários, com palavras, frases e conceitos familiares ao usuário, em vez de termos orientados ao sistema.
-              </p>
-              <div className="mt-4">
-                <div className="text-sm font-medium">
-                  Status: {analysisResults?.systemMatch.status === 'pass' ? 'Aprovado' : 'Reprovado'}
-                </div>
-                <div className="text-sm text-muted-foreground mt-2">
-                  Recomendação: {analysisResults?.systemMatch.recommendation}
-                </div>
-              </div>
-            </div>
+        analysisResults ? (
+          <AnalysisResults 
+            formData={formData}
+            results={analysisResults}
+            onReset={resetAnalysis}
+          />
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Carregando resultados...</span>
           </div>
-        </div>
+        )
       )
     }
   ]
@@ -291,4 +345,4 @@ export default function HeuristicsPage() {
       </div>
     </MainLayout>
   )
-} 
+}
