@@ -89,7 +89,7 @@ export function ImageUpload({ images, onChange, maxImages = 7 }: ImageUploadProp
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}
+          ${isDragActive ? 'border-primary bg-primary/10' : 'border'}
           ${images.length >= maxImages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         onClick={(e) => {
           if (images.length > 0) {
