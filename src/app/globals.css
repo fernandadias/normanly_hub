@@ -66,11 +66,6 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-0;
-  }
-  body {
-    @apply bg-background text-foreground dark;
-  }
+body {
+  @apply bg-background text-foreground;
 }

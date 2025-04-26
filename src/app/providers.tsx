@@ -1,12 +1,14 @@
 "use client"
 
-import { ReactNode } from 'react'
-import { SubscriptionProvider } from '@/contexts/subscription-context'
+import { ThemeProvider } from "@/components/theme-provider"
+import { SubscriptionProvider } from "@/contexts/subscription-context"
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SubscriptionProvider>
-      {children}
-    </SubscriptionProvider>
+    <ThemeProvider>
+      <SubscriptionProvider>
+        {children}
+      </SubscriptionProvider>
+    </ThemeProvider>
   )
 }
