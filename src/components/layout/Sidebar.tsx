@@ -17,30 +17,31 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   // Força a sidebar expandida em telas menores
   useEffect(() => {
     const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024)
       if (window.innerWidth < 1024) {
         setIsCollapsed(false)
       }
     }
 
-    window.addEventListener('resize', handleResize)
     handleResize() // Checa o tamanho inicial da tela
-
+    window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   return (
     <div className={cn(
-      "h-screen bg-card border-r border-border flex flex-col transition-all duration-300 sticky top-0",
+      "h-screen bg-card border-r flex flex-col transition-all duration-300 sticky top-0",
       isCollapsed ? "w-[80px]" : "w-64"
     )}>
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -right-4 top-2 hidden lg:flex h-8 w-8 border border-border bg-background"
+        className="absolute -right-4 top-2 hidden lg:flex h-8 w-8 border bg-background"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         {isCollapsed ? (
@@ -81,14 +82,14 @@ export function Sidebar() {
                 title={isCollapsed ? item.name : undefined}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {(!isCollapsed || window.innerWidth < 1024) && <span className="ml-3">{item.name}</span>}
+                {(!isCollapsed || isMobile) && <span className="ml-3">{item.name}</span>}
               </Link>
             )
           })}
         </nav>
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t">
         <div className={cn("space-y-2", isCollapsed && "text-center")}>
           <div className="text-sm font-medium">Plano Atual</div>
           {!isCollapsed && <div className="text-xs text-muted-foreground">Free</div>}
@@ -109,4 +110,4 @@ export function Sidebar() {
       </div>
     </div>
   )
-} 
+}
