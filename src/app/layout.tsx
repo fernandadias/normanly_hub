@@ -1,37 +1,29 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/contexts/auth-context";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { Providers } from './providers'
+import { Toaster } from '@/components/ui/toaster'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "HubV3",
-  description: "Sua plataforma de análise de produtos digitais",
-};
+  title: 'Normanly Hub - Agentes de IA para UX Designers',
+  description: 'Plataforma com agentes de IA especializados para UX designers',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="pt-BR" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
+    <html lang="pt-BR">
+      <body className={inter.className}>
+        <Providers>
           {children}
-        </AuthProvider>
+          <Toaster />
+        </Providers>
       </body>
     </html>
-  );
+  )
 }
